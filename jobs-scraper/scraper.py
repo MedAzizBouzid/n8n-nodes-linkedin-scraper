@@ -1,7 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
 from urllib.parse import quote
-from playwright_stealth import stealth_async  # ✅ IMPORT CORRECT
 import pandas as pd
 import random
 import json
@@ -19,9 +18,6 @@ async def agent_scraper_linkedin(query, location, num_pages=1):
             user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         )
         page = await context.new_page()
-        
-        # ✅ Apply stealth mode - VERSION CORRECTE
-        await stealth_async(page)
 
         job_urls_to_scrape = []
         for page_num in range(num_pages):
@@ -45,36 +41,49 @@ async def agent_scraper_linkedin(query, location, num_pages=1):
 
             except Exception as e:
                 print(f"❌ Error during search results page scraping: {e}")
-                await page.screenshot(path=f'/scripts/debug_search_error_{page_num}.png')
                 break
 
         print(f"✅ Found {len(job_urls_to_scrape)} job offers from search results. Now scraping individual pages.")
 
-        for job_data in job_urls_to_scrape:
+        for job_data in job_urls_to_scrape[:5]:
             job_url = job_data['url']
             print(f"→ Navigating to job page: {job_url}")
             try:
                 await page.goto(job_url, wait_until="domcontentloaded", timeout=60000)
+                await asyncio.sleep(2)  # Give page time to load
 
-                # Handle modal overlays
+                # ✅ IMPROVED: Handle ALL modals/overlays more aggressively
+                modal_selectors = [
+                    "button[aria-label='Dismiss']",
+                    "button[data-tracking-control-name='guest_contextual-auth-modal_dismiss']",
+                    "button.modal__dismiss",
+                    ".modal__overlay ~ button",
+                    "button[aria-label='Fermer']",
+                ]
+                
+                for selector in modal_selectors:
+                    try:
+                        if await page.locator(selector).count() > 0:
+                            print(f"  Closing modal with selector: {selector}")
+                            await page.locator(selector).first.click(timeout=3000)
+                            await asyncio.sleep(1)  # Wait for modal to close
+                    except Exception:
+                        pass
+
+                # ✅ IMPROVED: Try to close ANY visible modal overlay by pressing Escape
                 try:
-                    dismiss_selector = "button[aria-label='Dismiss']"
-                    if await page.locator(dismiss_selector).count() > 0:
-                        print("  Found a modal overlay. Clicking 'Dismiss'.")
-                        await page.locator(dismiss_selector).first.click(timeout=5000)
+                    await page.keyboard.press("Escape")
+                    await asyncio.sleep(0.5)
                 except Exception:
                     pass
 
-                # Handle cookie banners
+                # ✅ IMPROVED: Wait for modal overlay to actually disappear
                 try:
-                    cookies_selector = "button[data-tracking-control-name='guest_contextual-auth-modal_dismiss']"
-                    if await page.locator(cookies_selector).count() > 0:
-                        print("  Found a cookies banner. Clicking 'Dismiss'.")
-                        await page.locator(cookies_selector).first.click(timeout=5000)
+                    await page.wait_for_selector("div.modal__overlay", state="hidden", timeout=3000)
                 except Exception:
                     pass
 
-                # Handle "See more" buttons
+                # ✅ IMPROVED: Handle "See more" buttons with force click if needed
                 see_more_selectors = [
                     'button[aria-label="Voir la description complète de l’offre"]',
                     'button.show-more-less-button',
@@ -82,18 +91,26 @@ async def agent_scraper_linkedin(query, location, num_pages=1):
                     'button[aria-label="See more"]'
                 ]
 
+                see_more_clicked = False
                 for selector in see_more_selectors:
-                    if await page.locator(selector).count() > 0:
-                        print(f"  Clicking 'See more' button with selector: {selector}")
-                        await page.locator(selector).first.click(timeout=30000)
-                        await page.wait_for_selector(f'{selector}[aria-expanded="true"]', timeout=5000)
-                        break
+                    try:
+                        if await page.locator(selector).count() > 0:
+                            print(f"  Clicking 'See more' button with selector: {selector}")
+                            # ✅ Use force=True to bypass overlay checks
+                            await page.locator(selector).first.click(timeout=5000, force=True)
+                            await asyncio.sleep(1)
+                            see_more_clicked = True
+                            break
+                    except Exception as e:
+                        print(f"  Could not click 'See more' with {selector}: {e}")
+                        continue
 
                 # Extract description text
                 description_selectors = [
                     "div#job-details",
                     "div.description__text",
                     "div.jobs-description__content",
+                    "div.show-more-less-html__markup",
                     "div.job-description"
                 ]
 
@@ -101,10 +118,10 @@ async def agent_scraper_linkedin(query, location, num_pages=1):
                 for selector in description_selectors:
                     try:
                         description_element = page.locator(selector).first
-                        await description_element.wait_for(state="visible", timeout=10000)
-                        description_text = await description_element.inner_text()
-                        print(f"  Description found using selector: {selector}")
-                        break
+                        if await description_element.count() > 0:
+                            description_text = await description_element.inner_text(timeout=5000)
+                            print(f"  ✓ Description found using selector: {selector}")
+                            break
                     except Exception:
                         continue
 
@@ -147,7 +164,7 @@ if __name__ == "__main__":
         location = "France"
         num_pages = 1
 
-    print(f"🔍 Searching for: '{query}' in '{location}' ({num_pages} page(s))")
+    print(f"🔎 Searching for: '{query}' in '{location}' ({num_pages} page(s))")
     
     job_offers_data = asyncio.run(agent_scraper_linkedin(query, location, num_pages))
     
