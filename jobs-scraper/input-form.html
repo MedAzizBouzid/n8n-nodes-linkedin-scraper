@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkedIn Job Extractor Webhook</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configure Tailwind to use the Inter font family and enable custom utilities -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#0a66c2', // LinkedIn Blue
+                        secondary: '#4f46e5', // Indigo-600
+                        background: '#f3f4f6', // Gray-100
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background min-h-screen flex items-center justify-center p-4 font-sans">
+
+    <!-- Main Container Card -->
+    <div class="w-full max-w-xl bg-white shadow-xl rounded-xl p-8 md:p-10 border border-gray-200">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">LinkedIn Job Automation Trigger</h1>
+            <p class="text-gray-500">Enter the job details and the number of pages to extract.</p>
+        </header>
+
+        <form id="webhookForm" class="space-y-6">
+            
+            <!-- Webhook URL Input (Hidden but required for configuration) -->
+            <div class="mb-4">
+                
+                <!-- NOTE: The 'value' must be updated with your actual n8n Webhook URL -->
+                <input hidden type="hidden" id="webhookUrl" name="webhookUrl" 
+                       value="http://localhost:5678/webhook-test/linkedin-scraper" 
+                       placeholder="e.g., https://my.n8n.cloud/webhook/..."
+                       required 
+                       class="mt-1 block w-full px-4 py-2 border border-yellow-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm bg-yellow-50/50 text-gray-700"
+                >
+                
+            </div>
+
+
+            <!-- Job Name Field -->
+            <div>
+                <label for="job_name" class="block text-sm font-medium text-gray-700">
+                    Job Name / Title
+                </label>
+                <input type="text" id="job_name" name="job_name" required 
+                       placeholder="Software Engineer"
+                       class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary sm:text-base"
+                >
+            </div>
+
+            <!-- Job Location Field -->
+            <div>
+                <label for="job_location" class="block text-sm font-medium text-gray-700">
+                    Job Location
+                </label>
+                <input type="text" id="job_location" name="job_location" required 
+                       placeholder="Remote (Europe)"
+                       class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary sm:text-base"
+                >
+            </div>
+
+            <!-- Pages to Extract (1 to 5) -->
+            <div class="space-y-4 pt-2 border-t border-gray-200">
+                <label for="pages_to_extract" class="block text-sm font-semibold text-gray-700">
+                    Number of LinkedIn Search Pages to Extract (1-5)
+                </label>
+                <div>
+                    <input type="number" id="pages_to_extract" name="pages_to_extract" required 
+                           min="1" max="5" value="1"
+                           placeholder="Enter a number between 1 and 5"
+                           class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary sm:text-base"
+                    >
+                </div>
+                <p class="text-xs text-gray-500">
+                    This number determines how many result pages the workflow will paginate through (Max 5).
+                </p>
+            </div>
+
+            <!-- Submission Status Message -->
+            <div id="statusMessage" class="h-8 text-center text-sm font-medium pt-2">
+                <!-- Status messages will appear here -->
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" id="submitButton"
+                    class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-md text-base font-medium text-white bg-primary hover:bg-secondary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
+            >
+                Start Job Extraction
+            </button>
+        </form>
+
+    </div>
+
+    <script>
+        const form = document.getElementById('webhookForm');
+        const statusMessage = document.getElementById('statusMessage');
+        const submitButton = document.getElementById('submitButton');
+        const webhookUrlInput = document.getElementById('webhookUrl');
+
+        // Function to display status messages (without using alert)
+        function setStatus(message, isError = false) {
+            statusMessage.textContent = message;
+            statusMessage.className = `h-8 text-center text-sm font-medium pt-2 ${isError ? 'text-red-600' : 'text-green-600'}`;
+        }
+
+        // Simple exponential backoff retry mechanism
+        async function fetchWithRetry(url, options, retries = 3) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response;
+                } catch (error) {
+                    if (i === retries - 1) throw error;
+                    const delay = Math.pow(2, i) * 1000; // 1s, 2s, 4s...
+                    // console.log(`Retry attempt ${i + 1} after ${delay / 1000}s...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+
+        form.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const webhookUrl = webhookUrlInput.value;
+            if (webhookUrl === "YOUR_WEBHOOK_URL_HERE" || !webhookUrl.startsWith('http')) {
+                setStatus("Error: Please enter a valid Webhook URL first.", true);
+                return;
+            }
+
+            // 1. Collect form data
+            const formData = new FormData(form);
+            
+            // This is the final object to send to the webhook
+            const payload = {}; 
+
+            // 2. Iterate over the form data
+            for (let [key, value] of formData.entries()) {
+                // The webhookUrl is only used for the fetch call, not the payload
+                if (key === 'webhookUrl') continue;
+
+                // Handle the simple string fields
+                if (key === 'job_name' || key === 'job_location') {
+                    payload[key] = value;
+                } 
+                // Handle the new 'pages_to_extract' field and convert to integer
+                else if (key === 'pages_to_extract') {
+                    const numValue = parseInt(value.trim(), 10);
+                    // Check bounds and validity, although HTML handles most of it
+                    if (isNaN(numValue) || numValue < 1 || numValue > 5) {
+                        setStatus("Error: Pages to extract must be a number between 1 and 5.", true);
+                        submitButton.disabled = false;
+                        return;
+                    }
+                    payload[key] = numValue; // Store as number in the payload
+                }
+            }
+
+            // Check if the required fields were successfully processed
+            if (!payload.job_name || !payload.job_location || !payload.pages_to_extract) {
+                 setStatus("Error: Please fill in all required fields (Job Name, Location, and Pages).", true);
+                 submitButton.disabled = false;
+                 return;
+            }
+
+            // 3. Prepare for API call
+            submitButton.disabled = true;
+            submitButton.textContent = 'Sending...';
+            setStatus("Attempting to send data...", false);
+
+            try {
+                const response = await fetchWithRetry(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    // Convert the JavaScript object to a JSON string
+                    body: JSON.stringify(payload) 
+                });
+
+                // Assuming a successful POST means the webhook received it (e.g., status 200 or 204)
+                setStatus(`Success! Data sent to webhook. Status: ${response.status}.`, false);
+                
+                // Clear the input fields and reset the page count
+                document.getElementById('job_name').value = '';
+                document.getElementById('job_location').value = '';
+                document.getElementById('pages_to_extract').value = '1';
+
+            } catch (error) {
+                console.error('Webhook submission failed:', error);
+                setStatus(`Submission failed. Check console for error details.`, true);
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Start Job Extraction';
+            }
+        });
+    </script>
+</body>
+</html>
