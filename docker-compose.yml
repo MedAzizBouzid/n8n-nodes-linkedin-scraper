@@ -1,26 +1,23 @@
-version: '3.8'
-
 services:
   n8n:
-    # Tell this service to build from your Dockerfile
-    # instead of pulling a pre-made image.
+    container_name: n8n
     build:
       context: .
       dockerfile: Dockerfile.scraper
-    container_name: n8n
-    restart: always
     ports:
       - "5678:5678"
-    environment:
-      - N8N_BASIC_AUTH_ACTIVE=true
-      - N8N_BASIC_AUTH_USER=admin
-      - N8N_BASIC_AUTH_PASSWORD=admin123
     volumes:
-      # This is for your n8n data (workflows, credentials)
       - ./n8n_data:/home/node/.n8n
-      # ADD THIS LINE: This mounts your scripts,
-      # which was previously in your 'scraper' service.
-      - ./jobs-scraper:/scripts
+    restart: always
 
-# You no longer need the separate 'scraper' service,
-# so delete it from this file.
+  scraper:
+    container_name: scraper
+    build: ./scraper
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount your code directly - changes reflect immediately without rebuild!
+      - ./scraper:/app
+    # Add this to auto-reload on code changes
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    restart: always
