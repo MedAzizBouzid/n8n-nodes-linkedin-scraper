@@ -1,0 +1,23 @@
+services:
+  n8n:
+    container_name: n8n
+    build:
+      context: .
+      dockerfile: Dockerfile.scraper
+    ports:
+      - "5678:5678"
+    volumes:
+      - ./n8n_data:/home/node/.n8n
+    restart: always
+
+  scraper:
+    container_name: scraper
+    build: ./scraper
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount your code directly - changes reflect immediately without rebuild!
+      - ./scraper:/app
+    # Add this to auto-reload on code changes
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    restart: always

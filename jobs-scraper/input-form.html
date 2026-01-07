@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JobFit Agent - Application Preparation</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configure Tailwind to use the Inter font family and enable custom utilities -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#0a66c2', // LinkedIn Blue
+                        secondary: '#4f46e5', // Indigo-600
+                        background: '#f3ffce', // Light Pale Yellow for a focus feel
+                    },
+                    boxShadow: {
+                        '3xl': '0 35px 60px -15px rgba(0, 0, 0, 0.3)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Dialog (Modal) Styling */
+        dialog {
+            border: none;
+            padding: 0;
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            max-width: 90vw;
+            width: 768px; /* max-w-2xl */
+        }
+        dialog::backdrop {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+        }
+        /* Custom scrollbar for template view */
+        #templateContent {
+            overflow-y: auto;
+            max-height: 70vh;
+        }
+        #templateContent::-webkit-scrollbar {
+            width: 8px;
+        }
+        #templateContent::-webkit-scrollbar-thumb {
+            background-color: #0a66c2;
+            border-radius: 4px;
+        }
+        #templateContent::-webkit-scrollbar-track {
+            background-color: #f1f1f1;
+        }
+    </style>
+</head>
+<body class="bg-background min-h-screen flex items-center justify-center p-4 font-sans">
+
+    <!-- Main Container Card -->
+    <div class="w-full max-w-4xl bg-white shadow-3xl rounded-xl p-8 md:p-10 border border-gray-200">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">🚀 JobFit Agent: Application Customizer</h1>
+            <p class="text-gray-500 max-w-md mx-auto">
+                Upload your structured career profile and specify the jobs to scrape.
+            </p>
+        </header>
+
+        <form id="webhookForm" class="space-y-8">
+            
+            <!-- Webhook URL Input (Hidden but required for configuration) -->
+            <input hidden type="hidden" id="webhookUrl" name="webhookUrl" 
+                    value="http://localhost:5678/webhook-test/linkedin-scraper" 
+            >
+            
+            <!-- SECTION 1: CANDIDATE PROFILE (File Upload) -->
+            <div class="space-y-4 p-6 bg-gray-50 rounded-lg border border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">1. Upload Your Complete Profile Data</h2>
+                
+                <label for="candidate_profile_file" class="block text-sm font-medium text-gray-700">
+                    Upload a .txt or .docx file containing all your career information (Skills, Experience, Projects, etc.).
+                </label>
+                
+                <div class="flex items-center space-x-4">
+                    <input type="file" id="candidate_profile_file" name="candidate_profile_file" accept=".txt,.md" required 
+                        class="flex-grow block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-white focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-secondary/90"
+                    >
+
+                    <!-- View Template Button (Eye Icon) -->
+                    <button type="button" id="viewTemplateButton" title="View Template Format"
+                        class="p-3 text-white bg-gray-600 rounded-lg shadow-md hover:bg-gray-700 transition-colors flex items-center justify-center"
+                    >
+                        <!-- Eye Icon (from Lucide) using inline SVG -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye">
+                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                    </button>
+
+                    <!-- Download Template Button -->
+                    <button type="button" id="downloadTemplateButton" 
+                        class="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-lg shadow-md hover:bg-secondary transition-colors whitespace-nowrap"
+                    >
+                        Download Template (.md)
+                    </button>
+                </div>
+
+                <p class="text-xs text-gray-500 mt-1">
+                    Use the provided `.docx` template for best results. The file content will be sent to the LLM to selectively match job requirements.
+                </p>
+            </div>
+            
+            <!-- SECTION 2: JOB CRITERIA -->
+            <div class="space-y-6 p-6 bg-blue-50 rounded-lg border border-blue-200">
+                <h2 class="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">2. Job Search Criteria</h2>
+
+                <!-- Job Name Field -->
+                <div>
+                    <label for="job_name" class="block text-sm font-medium text-gray-700">Job Name / Title</label>
+                    <input type="text" id="job_name" name="job_name" required 
+                            placeholder="Data Scientist"
+                            class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary sm:text-base"
+                    >
+                </div>
+
+                <!-- Job Location Field -->
+                <div>
+                    <label for="job_location" class="block text-sm font-medium text-gray-700">Job Location</label>
+                    <input type="text" id="job_location" name="job_location" required 
+                            placeholder="Tunisia"
+                            class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary sm:text-base"
+                    >
+                </div>
+
+                <!-- Pages to Extract (1 to 5) -->
+                <div>
+                    <label for="pages_to_extract" class="block text-sm font-medium text-gray-700">
+                        Number of LinkedIn Search Pages to Extract (1-5)
+                    </label>
+                    <input type="number" id="pages_to_extract" name="pages_to_extract" required 
+                            min="1" max="5" value="1"
+                            placeholder="Enter a number between 1 and 5"
+                            class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary sm:text-base"
+                    >
+                    <p class="text-xs text-gray-500 mt-1">
+                        Each page contains up to 25 job results. The scraper will scrape job descriptions for the first 5 unique results found across these pages.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Submission Status Message -->
+            <div id="statusMessage" class="h-8 text-center text-sm font-medium pt-2">
+                <!-- Status messages will appear here -->
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" id="submitButton"
+                    class="w-full flex justify-center py-4 px-4 border border-transparent rounded-lg shadow-lg text-lg font-medium text-white bg-primary hover:bg-secondary transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-primary focus:ring-opacity-75 disabled:opacity-50 disabled:bg-gray-400 transform hover:scale-[1.01]"
+            >
+                Start Custom Application Generation
+            </button>
+        </form>
+
+    </div>
+
+    <!-- Template Preview Modal -->
+    <dialog id="templateModal">
+        <div class="p-6">
+            <div class="flex justify-between items-start border-b pb-3 mb-4">
+                <h3 class="text-xl font-bold text-gray-900">Candidate Profile Template (Content Preview)</h3>
+                <button id="closeModalButton" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+            </div>
+            <!-- The content is pre-formatted text from the PDF template -->
+            <pre id="templateContent" class="text-sm bg-gray-100 p-4 rounded-lg font-mono whitespace-pre-wrap"></pre>
+            <div class="mt-4 flex justify-end">
+                <button onclick="document.getElementById('templateModal').close()" class="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">Close</button>
+            </div>
+        </div>
+    </dialog>
+
+
+    <script>
+        const form = document.getElementById('webhookForm');
+        const statusMessage = document.getElementById('statusMessage');
+        const submitButton = document.getElementById('submitButton');
+        const webhookUrlInput = document.getElementById('webhookUrl');
+        const fileInput = document.getElementById('candidate_profile_file');
+        const downloadButton = document.getElementById('downloadTemplateButton');
+        const viewButton = document.getElementById('viewTemplateButton');
+        const templateModal = document.getElementById('templateModal');
+        const templateContentDiv = document.getElementById('templateContent');
+
+        // --- Template Content for Modal (Extracted from Template.pdf) ---
+        const TEMPLATE_PREVIEW_CONTENT = `
+JOHN DOE – DATA SCIENTIST
+
+PERSONAL INFORMATION
+Full Name: John Doe
+Title: Data Scientist | AI Engineer
+Phone: +1 555 123 456
+Email: johndoe@example.com
+Address: San Francisco, CA, USA
+LinkedIn: linkedin.com/in/john-doe
+GitHub: github.com/johndoe
+
+PROFESSIONAL SUMMARY
+[Write a concise 3-4 sentence summary of your career focus and key achievements.]
+Data Scientist and AI Engineer with strong expertise in machine learning, deep learning, and natural language processing. Passionate about building end-to-end AI solutions, from data processing to deployment.
+
+EDUCATION
+- Engineering Degree in Computer Science – Data Science Major, Tech University (2020-2025)
+- High School Diploma – Mathematics Track, International High School (2016-2020)
+
+PROFESSIONAL EXPERIENCE
+1. AI Engineer Intern – TechLabs AI (February 2025 – Present)
+    - Project: Automated API Governance Assistant
+    - Technologies: Python, PyTorch, Hugging Face, PEFT, QLoRA, LangChain, CI/CD
+2. Data Scientist – FuelTrack Energy (July 2024-September 2024)
+    - Built ML models to predict fuel consumption and optimize stock replenishment.
+    - Reduced fuel shortages across stations by optimizing delivery schedules.
+    - Technologies: XGBoost, LightGBM, Random Forest, Django, PostgreSQL
+
+ACADEMIC & PERSONAL PROJECTS
+1. Knowledge Graph for Enterprise Risk Monitoring
+    - Constructed a knowledge graph to predict and recommend risk mitigation actions.
+    - Technologies: NLP, LLMs, Graph Neural Networks, BERT, Llama models
+
+TECHNICAL SKILLS (List ALL relevant skills separated by sections)
+Programming Languages: Python, R, Java, C, C++, C#, PHP
+ML & Deep Learning: XGBoost, LightGBM, CNN, RNN, U-Net
+NLP & Generative AI: Transformers, Llama, BERT, Fine-tuning, LangChain, Hugging Face
+DevOps Tools: Docker, Jenkins, Git/GitHub, SonarQube, Grafana
+Databases: MySQL, PostgreSQL
+`;
+
+        // --- Utility Functions ---
+        
+        function setStatus(message, isError = false) {
+            statusMessage.textContent = message;
+            statusMessage.className = `h-8 text-center text-sm font-medium pt-2 ${isError ? 'text-red-600' : 'text-green-600'}`;
+        }
+
+        async function fetchWithRetry(url, options, retries = 3) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response;
+                } catch (error) {
+                    if (i === retries - 1) throw error;
+                    const delay = Math.pow(2, i) * 1000 + Math.random() * 500;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+
+        function readFileAsync(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (error) => reject(error);
+                reader.readAsText(file);
+            });
+        }
+
+        // --- Template Handlers ---
+
+        function downloadTemplate() {
+            // This is a direct reference to the uploaded .docx file
+            const docxFilePath = 'Template.md';
+            const a = document.createElement('a');
+            a.href = docxFilePath;
+            a.download = 'Candidate_Profile_Template.md';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function showTemplateModal() {
+            // Display the extracted, structured content in the modal
+            templateContentDiv.textContent = TEMPLATE_PREVIEW_CONTENT;
+            templateModal.showModal();
+        }
+
+        // --- Event Listeners ---
+
+        downloadButton.addEventListener('click', downloadTemplate);
+        viewButton.addEventListener('click', showTemplateModal);
+        document.getElementById('closeModalButton').addEventListener('click', () => templateModal.close());
+
+
+        form.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            submitButton.disabled = true;
+            submitButton.textContent = 'Validating inputs...';
+            
+            const webhookUrl = webhookUrlInput.value;
+            const file = fileInput.files[0];
+            const formData = new FormData(form);
+            const payload = {}; 
+            let isValid = true;
+
+            // if (webhookUrl === "http://localhost:5678/webhook-test/linkedin-scraper" || !webhookUrl.startsWith('http')) {
+            //     setStatus("Error: Please replace the placeholder Webhook URL with your actual n8n URL.", true);
+            //     isValid = false;
+            // }
+
+            const docxMime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            const acceptedMimeTypes = ['text/plain', 'text/markdown', 'application/octet-stream', docxMime];
+
+            if (!file) {
+                setStatus("Error: Please upload your profile file.", true);
+                isValid = false;
+            } else if (!acceptedMimeTypes.includes(file.type) && !file.name.endsWith('.txt') && !file.name.endsWith('.md') && !file.name.endsWith('.docx')) {
+                // Si le type MIME n'est pas reconnu OU que l'extension n'est pas acceptée
+                setStatus("Error: Only .txt, .md, or .docx files are supported for the profile.", true);
+                isValid = false;
+            }
+
+
+            // 1. Collect form data
+            for (let [key, value] of formData.entries()) {
+                if (key === 'webhookUrl' || key === 'candidate_profile_file') continue;
+                
+                if (key === 'pages_to_extract') {
+                    const numValue = parseInt(value.trim(), 10);
+                    if (isNaN(numValue) || numValue < 1 || numValue > 5) {
+                        setStatus("Error: Pages to extract must be a number between 1 and 5.", true);
+                        isValid = false;
+                        break;
+                    }
+                    payload[key] = numValue;
+                } else {
+                    if (value.trim() === '') {
+                        setStatus(`Error: Please fill in the '${key}' field.`, true);
+                        isValid = false;
+                        break;
+                    }
+                    payload[key] = value.trim();
+                }
+            }
+
+            if (!isValid) {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Start Custom Application Generation';
+                return;
+            }
+
+            // 2. Read file content and add to payload
+            submitButton.textContent = 'Reading file content...';
+            try {
+                payload.candidate_profile = await readFileAsync(file);
+                
+                if (payload.candidate_profile.trim().length < 100) {
+                    setStatus("Error: Profile content is too short. Please provide a detailed profile.", true);
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Start Custom Application Generation';
+                    return;
+                }
+
+            } catch (error) {
+                console.error('File read failed:', error);
+                setStatus('Error: Could not read the uploaded file.', true);
+                submitButton.disabled = false;
+                submitButton.textContent = 'Start Custom Application Generation';
+                return;
+            }
+
+
+            // 3. Prepare for API call
+            submitButton.textContent = 'Sending data to the JobFit Agent workflow...';
+            setStatus("Sending data to the JobFit Agent workflow...", false);
+
+            try {
+                const response = await fetchWithRetry(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload) 
+                });
+
+                // Success
+                setStatus(`Success! Workflow started (Status: ${response.status}). The agent is now generating documents.`, false);
+                
+                // Clear search criteria and file input
+                document.getElementById('job_name').value = '';
+                document.getElementById('job_location').value = '';
+                document.getElementById('pages_to_extract').value = '1';
+                fileInput.value = ''; // Clear file input
+
+            } catch (error) {
+                console.error('Webhook submission failed:', error);
+                setStatus(`Submission failed. Check console for error details or verify your n8n webhook URL.`, true);
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Start Custom Application Generation';
+            }
+        });
+    </script>
+</body>
+</html>
