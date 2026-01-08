@@ -1,4 +1,4 @@
-# 🤖 JobFit AI Agent
+# 🤖 AI-Powered Job Application Assistant
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)](https://docs.docker.com/compose/)
@@ -64,8 +64,8 @@ Before you begin, ensure you have the following installed:
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/job-application-assistant.git
-cd job-application-assistant
+git clone https://github.com/MedAzizBouzid/n8n-nodes-linkedin-scraper.git
+cd n8n-nodes-linkedin-scraper
 ```
 
 ### Step 2: Project Structure
@@ -73,7 +73,7 @@ cd job-application-assistant
 Ensure your project has the following structure:
 
 ```
-job-application-assistant/
+n8n-nodes-linkedin-scraper/
 ├── docker-compose.yml
 ├── Dockerfile.scraper
 ├── n8n_data/
@@ -140,9 +140,18 @@ On first launch, you'll be prompted to create an admin account.
 ### 4. Configure Workflow Nodes
 
 #### Webhook Node (Get form data):
-- **Webhook URL**: Will be auto-generated
+- **Webhook URL**: Will be auto-generated (e.g., `http://localhost:5678/webhook-test/linkedin-scraper`)
 - **Method**: POST
-- **Path**: `/job-application`
+- **Path**: `/linkedin-scraper` (or your preferred path)
+- **Copy this URL** - you'll need it for the HTML form
+
+**Important**: Copy your webhook URL and update it in `jobs-scraper/input-form.html`:
+```javascript
+// Find this line in input-form.html:
+value="http://localhost:5678/webhook-test/linkedin-scraper"
+
+// Replace with your actual webhook URL from n8n
+```
 
 #### HTTP Request Node (Extract LinkedIn jobs):
 - **URL**: `http://scraper:8000/scrape`
@@ -155,7 +164,66 @@ On first launch, you'll be prompted to create an admin account.
 
 ## 🚀 Usage
 
-### Method 1: Using the Webhook (Recommended)
+### Method 1: Using the Web Form (Easiest - Recommended)
+
+The project includes a user-friendly HTML form for submitting job applications:
+
+1. **Open the form** in your browser:
+   ```bash
+   # If running locally
+   open jobs-scraper/input-form.html
+   
+   # Or navigate to:
+   file:///path/to/your/project/jobs-scraper/input-form.html
+   ```
+
+2. **Configure the webhook URL** in the form:
+   - Open `input-form.html` in a text editor
+   - Find the line: `value="http://localhost:5678/webhook-test/linkedin-scraper"`
+   - Replace it with your actual n8n webhook URL from the workflow
+
+3. **Use the form**:
+   - **Upload your profile**: Use the `.txt` or `.md` file with your complete career information
+   - **Download/View template**: Click the template buttons to see the required format
+   - **Enter job criteria**: Job title, location, and number of pages to scrape (1-5)
+   - **Submit**: Click "Start Custom Application Generation"
+
+The form will:
+- ✅ Validate all inputs
+- ✅ Read your profile file content
+- ✅ Send data to your n8n webhook
+- ✅ Show success/error messages
+- ✅ Retry failed requests automatically
+
+**Template File Format** (`Template.md` provided):
+```markdown
+JOHN DOE – DATA SCIENTIST
+
+PERSONAL INFORMATION
+Full Name: John Doe
+Email: john.doe@example.com
+Phone: +1-555-123-456
+LinkedIn: linkedin.com/in/johndoe
+
+PROFESSIONAL SUMMARY
+[Your 3-4 sentence career summary]
+
+EDUCATION
+- Degree details
+- Institution, Year
+
+PROFESSIONAL EXPERIENCE
+1. Job Title – Company (Date Range)
+   - Key achievements
+   - Technologies used
+
+TECHNICAL SKILLS
+Programming Languages: Python, Java, etc.
+ML & AI: TensorFlow, PyTorch, etc.
+Tools: Docker, Git, etc.
+```
+
+### Method 2: Using the Webhook (For API Integration)
 
 Send a POST request to your n8n webhook with the candidate profile:
 
@@ -163,23 +231,14 @@ Send a POST request to your n8n webhook with the candidate profile:
 curl -X POST http://localhost:5678/webhook/YOUR_WEBHOOK_ID \
   -H "Content-Type: application/json" \
   -d '{
-    "candidate_profile": {
-      "name": "John Doe",
-      "email": "john.doe@example.com",
-      "phone": "+1-234-567-8900",
-      "skills": "Python, Machine Learning, Data Analysis, SQL",
-      "experience": "5 years as Data Scientist at Tech Corp, led ML projects",
-      "education": "MSc in Computer Science, Stanford University"
-    },
-    "job_search": {
-      "job_name": "Data Scientist",
-      "job_location": "France",
-      "pages_to_extract": 1
-    }
+    "candidate_profile": "Your complete profile text here...",
+    "job_name": "Data Scientist",
+    "job_location": "France",
+    "pages_to_extract": 1
   }'
 ```
 
-### Method 2: Direct API Call
+### Method 3: Direct API Call
 
 Test the scraper API directly:
 
@@ -250,13 +309,19 @@ Scrapes jobs and returns CSV file directly.
 ## 📁 Project Structure
 
 ```
-job-application-assistant/
+n8n-nodes-linkedin-scraper/
 ├── docker-compose.yml          # Docker services configuration
 ├── Dockerfile.scraper          # n8n container with dependencies
+├── .env                        # Environment variables (create this)
+├── .gitignore                  # Git ignore file
 ├── README.md                   # This file
 ├── workflow.json               # n8n workflow export
 ├── n8n_data/                   # n8n persistent data
 │   └── (auto-generated)
+├── jobs-scraper/               # Web form and templates
+│   ├── input-form.html         # User-friendly web form
+│   ├── Template.md             # Profile template file
+│   └── requirements.txt        # Python dependencies
 └── scraper/                    # Job scraper service
     ├── Dockerfile              # Scraper container
     ├── main.py                 # FastAPI application
@@ -440,8 +505,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For questions or support:
 - Open an issue on GitHub
-- Email: your.email@example.com
-- LinkedIn: [Your Profile](https://linkedin.com/in/yourprofile)
+- Email: azizbouzid789@gmail.com
+- LinkedIn: [Med Aziz Bouzid](https://linkedin.com/in/mohamed-aziz-bouzid)
 
 ## 🗺️ Roadmap
 
@@ -455,6 +520,6 @@ For questions or support:
 
 ---
 
-**Made with ❤️ by [Your Name]**
+**Made with ❤️ by Mohamed Aziz Bouzid**
 
 ⭐ Star this repo if you find it helpful!
