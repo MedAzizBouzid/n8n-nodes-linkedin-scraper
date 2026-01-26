@@ -12,11 +12,8 @@
       "name": "Get form data",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [
-        64,
-        480
-      ],
-      "webhookId": "92595478-533e-46c1-b576-a4c88198a6e3"
+      "position": [64, 480],
+      "webhookId": "WEBHOOK_ID_PLACEHOLDER"
     },
     {
       "parameters": {
@@ -24,28 +21,22 @@
         "url": "http://scraper:8000/scrape-csv",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"job_name\": \"{{ $json.body.job_name }}\",\n  \"job_location\": \"{{ $json.body.job_location }}\",\n  \"pages_to_extract\": \"{{ $json.body.pages_to_extract }}\"\n}\n",
+        "jsonBody": "={\n \"job_name\": \"{{ $json.body.job_name }}\",\n \"job_location\": \"{{ $json.body.job_location }}\",\n \"pages_to_extract\": \"{{ $json.body.pages_to_extract }}\"\n}\n",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [
-        448,
-        480
-      ],
+      "position": [448, 480],
       "id": "584d39b2-26fa-4ee4-b50d-1d459513b244",
       "name": "Extract linkedin jobs"
     },
     {
       "parameters": {
-        "jsCode": "// Get the CSV string from the data field\nconst csvString = items[0].json.data;\n\n// Simple but robust CSV parser that handles commas in quoted fields\nfunction parseCSV(csv) {\n  const lines = [];\n  let currentLine = [];\n  let currentField = '';\n  let insideQuotes = false;\n  \n  for (let i = 0; i < csv.length; i++) {\n    const char = csv[i];\n    const nextChar = csv[i + 1];\n    \n    if (char === '\"') {\n      if (insideQuotes && nextChar === '\"') {\n        // Escaped quote\n        currentField += '\"';\n        i++; // Skip next quote\n      } else {\n        // Toggle quote state\n        insideQuotes = !insideQuotes;\n      }\n    } else if (char === ',' && !insideQuotes) {\n      // End of field\n      currentLine.push(currentField);\n      currentField = '';\n    } else if (char === '\\n' && !insideQuotes) {\n      // End of line\n      currentLine.push(currentField);\n      lines.push(currentLine);\n      currentLine = [];\n      currentField = '';\n    } else if (char === '\\r') {\n      // Skip carriage return\n      continue;\n    } else {\n      currentField += char;\n    }\n  }\n  \n  // Add last field and line if any\n  if (currentField || currentLine.length > 0) {\n    currentLine.push(currentField);\n    lines.push(currentLine);\n  }\n  \n  return lines;\n}\n\n// Parse the CSV\nconst parsedLines = parseCSV(csvString);\n\n// First line is headers\nconst headers = parsedLines[0].map(h => h.trim());\n\n// Rest are data rows\nconst results = [];\nfor (let i = 1; i < parsedLines.length; i++) {\n  const values = parsedLines[i];\n  \n  // Skip empty lines\n  if (values.length === 0 || (values.length === 1 && !values[0])) {\n    continue;\n  }\n  \n  const row = {};\n  headers.forEach((header, index) => {\n    row[header] = values[index] ? values[index].trim() : '';\n  });\n  \n  results.push(row);\n}\n\nreturn results.map(item => ({ json: item }));"
+        "jsCode": "// Get the CSV string from the data field\nconst csvString = items[0].json.data;\n\n// Simple but robust CSV parser that handles commas in quoted fields\nfunction parseCSV(csv) {\n const lines = [];\n let currentLine = [];\n let currentField = '';\n let insideQuotes = false;\n \n for (let i = 0; i < csv.length; i++) {\n const char = csv[i];\n const nextChar = csv[i + 1];\n \n if (char === '\"') {\n if (insideQuotes && nextChar === '\"') {\n // Escaped quote\n currentField += '\"';\n i++; // Skip next quote\n } else {\n // Toggle quote state\n insideQuotes = !insideQuotes;\n }\n } else if (char === ',' && !insideQuotes) {\n // End of field\n currentLine.push(currentField);\n currentField = '';\n } else if (char === '\\n' && !insideQuotes) {\n // End of line\n currentLine.push(currentField);\n lines.push(currentLine);\n currentLine = [];\n currentField = '';\n } else if (char === '\\r') {\n // Skip carriage return\n continue;\n } else {\n currentField += char;\n }\n }\n \n // Add last field and line if any\n if (currentField || currentLine.length > 0) {\n currentLine.push(currentField);\n lines.push(currentLine);\n }\n \n return lines;\n}\n\n// Parse the CSV\nconst parsedLines = parseCSV(csvString);\n\n// First line is headers\nconst headers = parsedLines[0].map(h => h.trim());\n\n// Rest are data rows\nconst results = [];\nfor (let i = 1; i < parsedLines.length; i++) {\n const values = parsedLines[i];\n \n // Skip empty lines\n if (values.length === 0 || (values.length === 1 && !values[0])) {\n continue;\n }\n \n const row = {};\n headers.forEach((header, index) => {\n row[header] = values[index] ? values[index].trim() : '';\n });\n \n results.push(row);\n}\n\nreturn results.map(item => ({ json: item }));"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        864,
-        480
-      ],
+      "position": [864, 480],
       "id": "ffbe2814-a087-4916-aebb-790deec535fc",
       "name": "convert jobs into map"
     },
@@ -58,10 +49,7 @@
       },
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
-      "position": [
-        1456,
-        480
-      ],
+      "position": [1456, 480],
       "id": "83a8f580-afea-4dee-ac02-8e32ecf3a7f6",
       "name": "Extract from CSV"
     },
@@ -75,15 +63,12 @@
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
-      "position": [
-        1888,
-        448
-      ],
+      "position": [1888, 448],
       "id": "c57ef7c8-4043-4b84-99db-c39dba1f3591",
       "name": "Cover Letter generator",
       "credentials": {
         "openRouterApi": {
-          "id": "el4UQEtACnl2BWW4",
+          "id": "YOUR_OPENROUTER_CREDENTIAL_ID",
           "name": "OpenRouter account"
         }
       }
@@ -98,15 +83,12 @@
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
-      "position": [
-        1872,
-        1136
-      ],
+      "position": [1872, 1136],
       "id": "42c5eccd-3d0e-4b33-9c58-f4ab88114797",
       "name": "Resume Generator",
       "credentials": {
         "openRouterApi": {
-          "id": "el4UQEtACnl2BWW4",
+          "id": "YOUR_OPENROUTER_CREDENTIAL_ID",
           "name": "OpenRouter account"
         }
       }
@@ -123,7 +105,7 @@
             },
             {
               "type": "HumanMessagePromptTemplate",
-              "message": "=Generate a professional cover letter for the following job opportunity:  JOB TITLE: {{ $json['﻿title'] }} JOB URL: {{ $json.url }}  JOB DESCRIPTION: {{ $json.description }} CANDIDATE PROFILE:    {{ $('Get form data').first().json.body.candidate_profile }}  Please write a professional cover letter (300-400 words) that: 1. Has a strong opening that expresses interest in the role 2. Highlights relevant skills and experience from the candidate's profile that match the job requirements 3. Demonstrates enthusiasm and cultural fit 4. Includes a compelling closing paragraph 5. Uses a professional yet personable tone  Format the letter properly with paragraphs."
+              "message": "=Generate a professional cover letter for the following job opportunity: JOB TITLE: {{ $json['﻿title'] }} JOB URL: {{ $json.url }} JOB DESCRIPTION: {{ $json.description }} CANDIDATE PROFILE: {{ $('Get form data').first().json.body.candidate_profile }} Please write a professional cover letter (300-400 words) that: 1. Has a strong opening that expresses interest in the role 2. Highlights relevant skills and experience from the candidate's profile that match the job requirements 3. Demonstrates enthusiasm and cultural fit 4. Includes a compelling closing paragraph 5. Uses a professional yet personable tone Format the letter properly with paragraphs."
             }
           ]
         },
@@ -131,10 +113,7 @@
       },
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.9,
-      "position": [
-        1888,
-        144
-      ],
+      "position": [1888, 144],
       "id": "82e963cb-0601-4b30-a7ae-e478e047d7db",
       "name": "Cover letter"
     },
@@ -149,7 +128,7 @@
             },
             {
               "type": "HumanMessagePromptTemplate",
-              "message": "=Generate a professional ATS-friendly CV in LaTeX format based on the following information:  TARGET JOB: {{ $json['﻿title'] }}  JOB DESCRIPTION: {{ $json.description }}  CANDIDATE PROFILE:  {{ $('Get form data').item.json.body.candidate_profile }} REQUIREMENTS: 1. Output ONLY valid LaTeX code (no explanations, just the code) 2. Must fit on ONE page maximum 3. ATS-friendly (use simple formatting, no tables, no graphics) 4. Professional and clean design 5. Tailor the content to match the job requirements 6. Include sections: Contact Info, Professional Summary, Experience, Education, Skills  EXAMPLE ATS-FRIENDLY CV TEMPLATE TO FOLLOW: \\documentclass[a4paper,10pt]{article} \\usepackage[utf8]{inputenc} \\usepackage[T1]{fontenc} \\usepackage[english]{babel} \\usepackage[a4paper,margin=1.5cm]{geometry} \\usepackage{titlesec} \\usepackage{enumitem} \\usepackage{xcolor} \\usepackage{hyperref}  % Define colors and link styles \\definecolor{MidnightBlue}{rgb}{0.1, 0.1, 0.44} \\hypersetup{     colorlinks=true,     linkcolor=MidnightBlue,     urlcolor=MidnightBlue,     pdftitle={Resume Mohamed Aziz Bouzid},     pdfauthor={Mohamed Aziz Bouzid} }  % Section formatting \\titleformat{\\section}   {\\large\\bfseries\\color{MidnightBlue}}   {}   {0em}   {}   [\\titlerule] \\titlespacing*{\\section}{0pt}{1.2ex}{0.8ex}  % Item list spacing \\setlist[itemize]{leftmargin=1.5em, itemsep=0.2ex, topsep=0.2ex, partopsep=0pt, parsep=0pt}  \\pagestyle{empty}  \\begin{document}  % --- HEADER --- \\begin{center}     {\\LARGE \\textbf{Mohamed Aziz Bouzid}}\\\\[3pt]     {\\large \\textbf{Data Science \\& AI Engineer}}\\\\[5pt]     \\small     Tunis, Tunisia • +216 93 320 929 • \\href{mailto:azizbouzid789@gmail.com}{azizbouzid789@gmail.com}     \\href{https://linkedin.com/in/mohamed-aziz-bouzid-944965279/}{linkedin.com/in/mohamed-aziz-bouzid} • \\href{https://github.com/MedAzizBouzid}{github.com/MedAzizBouzid} \\end{center} \\vspace{-1ex} % --- END HEADER ---   \\section*{Professional Experience}  \\noindent{\\large\\textbf{\\color{MidnightBlue}Mindrift}} \\hfill \\textit{Sept. 2025 – Present}\\\\ \\textit{Freelance AI Agent Assistant} \\begin{itemize}     \\item Contributed to data annotation projects, LLM response evaluation, and frame annotation tasks.     \\item Assisted in AI content generation and conversational model supervision. \\end{itemize}  \\noindent{\\large\\textbf{\\color{MidnightBlue}Oolab-Oodrive}} \\hfill \\textit{Feb. – Jul. 2025}\\\\ \\textit{AI Engineer Intern (Final-Year Project)}\\\\ {\\color{MidnightBlue}\\textit{Project: API Style Guide Enforcer (Weaver, Sage, Oracle)}} \\begin{itemize}     \\item Developed three internal AI assistants for API standardization at Oodrive based on \\textbf{LLMs (Mistral)} integrated into the CI/CD pipeline.     \\item Applied advanced techniques: \\textbf{Fine-tuning}, \\textbf{Prompt Engineering}, \\textbf{LangChain}, \\textbf{Chain of Thought}, \\textbf{ReAct}, \\textbf{PEFT}, \\textbf{QLoRA}, \\textbf{Quantization}, \\textbf{Unsloth}, and \\textbf{Data Augmentation}.     \\item Converted and optimized model weights (\\textbf{Safetensors → GGUF}) for internal deployment and implemented \\textbf{streaming generation} via \\textbf{Gradio}.     \\item Evaluated performance using \\textbf{BLEU Score}, \\textbf{ROUGE Score}, and a \\textbf{LLM-as-a-Judge} approach.     \\item Automatically generated YAML rules, Gherkin tests, and Postman collections for API validation. \\end{itemize}  \\noindent{\\large\\textbf{\\color{MidnightBlue}Packymaak}} \\hfill \\textit{Jan. 2025 – Present}\\\\ \\textit{Web Developer (Part-time)} \\begin{itemize}     \\item Developed web features for a package management platform enabling carriers to manage deliveries and clients to track packages from departure to arrival.     \\item Technologies: \\textbf{Django}, \\textbf{PostgreSQL}, \\textbf{AWS S3}, \\textbf{Google Maps APIs}, \\textbf{GitHub}, \\textbf{Jira}. \\end{itemize}  \\noindent{\\large\\textbf{\\color{MidnightBlue}SNDP Agil Energy}} \\hfill \\textit{Jul. – Sept. 2024}\\\\ \\textit{Data Scientist Intern} \\begin{itemize}     \\item Developed \\textbf{XGBoost}, \\textbf{LightGBM}, and \\textbf{Random Forest} models for fuel stock prediction and optimization.     \\item Deployed models using \\textbf{Django} and \\textbf{MySQL} for Agil service stations across Tunisia. \\end{itemize}  \\noindent{\\large\\textbf{\\color{MidnightBlue}Tritux Group}} \\hfill \\textit{Jul. – Sept. 2023}\\\\ \\textit{Web Developer} \\begin{itemize}     \\item Developed a complete e-commerce website using \\textbf{Symfony5} and \\textbf{MySQL}. \\end{itemize}   \\section*{Academic and AI Projects}  \\noindent{\\large\\textbf{\\color{MidnightBlue}Lung Cancer Detection}} \\hfill \\textit{Jan. – May 2024} \\begin{itemize}     \\item OSIRIX plugin integrating \\textbf{CNN} and \\textbf{U-Net} models for medical image analysis. \\end{itemize}  \\noindent{\\large\\textbf{\\color{MidnightBlue}Intrusion Detection System}} \\hfill \\textit{Mar. – Apr. 2024} \\begin{itemize}     \\item Intelligent network attack detection system using \\textbf{Decision Tree}, \\textbf{Random Forest}, \\textbf{SVM}, \\textbf{KNN}, \\textbf{Naive Bayes}. \\end{itemize}  \\noindent{\\large\\textbf{\\color{MidnightBlue}Object Detection and Segmentation System}} \\hfill \\textit{Nov. – Dec. 2023} \\begin{itemize}     \\item Developed a \\textbf{Mask R-CNN} model for adaptive object detection and segmentation using the \\textbf{COCO} dataset (330k+ annotated images), achieving \\textbf{95\\% accuracy}. \\end{itemize}   \\section*{Certifications}  \\begin{itemize}[label=]     \\item \\textbf{RGPD Certification} – Oodrive \\hfill 2025     \\item \\textbf{SSI Certification} - Oodrive \\hfill 2025     \\item \\textbf{IBM Data Science Orientation} - Coursera \\hfill 2023 \\end{itemize}   \\section*{Technical Skills}  \\begin{itemize}[label=, leftmargin=*]     \\item \\textbf{Languages:} Python, R, Java, C/C++, C\\#, PHP, Bash, SQL     \\item \\textbf{AI/ML:} TensorFlow, PyTorch, Scikit-learn, Transformers, XGBoost, LightGBM, CNN, RNN, U-Net, SVM     \\item \\textbf{NLP \\& LLM:} LLaMA, Mistral,OpenAI, Gemini, PEFT, QLoRA,Fine-Tunning, Prompt Engineering Techniques, Hugging Face, Unsloth, Ollama,      \\item \\textbf{Web:} Django, Flask, Symfony, AWS, PostgreSQL, MySQL     \\item \\textbf{DevOps:} Docker, Jenkins, Git, CI/CD, SonarQube, Grafana     \\item \\textbf{Languages:} English (B2), French (B2), Arabic (Native) \\end{itemize}   \\section*{Education}  \\noindent\\textbf{Engineering Degree in Data Science – ESPRIT} \\hfill \\textit{2020 – 2025}\\\\ \\textbf{Baccalaureate in Mathematics – Bardo High School} \\hfill \\textit{2020}  \\end{document}"
+              "message": "=Generate a professional ATS-friendly CV in LaTeX format based on the following information: TARGET JOB: {{ $json['﻿title'] }} JOB DESCRIPTION: {{ $json.description }} CANDIDATE PROFILE: {{ $('Get form data').item.json.body.candidate_profile }} REQUIREMENTS: 1. Output ONLY valid LaTeX code (no explanations, just the code) 2. Must fit on ONE page maximum 3. ATS-friendly (use simple formatting, no tables, no graphics) 4. Professional and clean design 5. Tailor the content to match the job requirements 6. Include sections: Contact Info, Professional Summary, Experience, Education, Skills EXAMPLE ATS-FRIENDLY CV TEMPLATE TO FOLLOW: [TEMPLATE CONTENT - See original for full LaTeX template]"
             }
           ]
         },
@@ -157,10 +136,7 @@
       },
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.9,
-      "position": [
-        1872,
-        864
-      ],
+      "position": [1872, 864],
       "id": "b5972d02-956e-4991-bf72-1c7cdc93b650",
       "name": "Resume"
     },
@@ -170,23 +146,17 @@
       },
       "type": "n8n-nodes-base.convertToFile",
       "typeVersion": 1.1,
-      "position": [
-        1184,
-        480
-      ],
+      "position": [1184, 480],
       "id": "12814374-f701-4bde-a022-94e4f40a6d52",
       "name": "Create CSV file"
     },
     {
       "parameters": {
-        "jsCode": "const results = [];\n\nconst csvItems = $('Extract from CSV').all();\nconst clItems = $('Cover letter').all();\nconst cvItems = $('Resume').all();\n\nfor (let i = 0; i < clItems.length; i++) {\n  \n  // --- 1. CLEANING THE COVER LETTER ---\n  let rawLetter = clItems[i].json.text || \"\";\n  let cleanLetter = rawLetter\n      .split('\\\\n').join('\\n')\n      .replace(/[\\[\\]]/g, '');\n\n  // --- 2. CLEANING THE CV (FOR OVERLEAF) ---\n  let rawResume = cvItems[i].json.text || \"\";\n  let formattedResume = rawResume.split('\\\\n').join('\\n');\n\n  // --- 3. GENERATING RTF CONTENT (For \"Convert to RTF\" Node) ---\n  // RTF requires double backslashes for its own commands and \\par for new lines\n  \n  \n   \n\n  results.push({\n    json: {\n      job_title: csvItems[i].json['title'] || csvItems[i].json['﻿title'], \n      job_url: csvItems[i].json.url,\n      cover_letter: cleanLetter,   \n      cv: formattedResume,         \n          \n    }\n  });\n}\n\nreturn results;"
+        "jsCode": "const results = [];\n\nconst csvItems = $('Extract from CSV').all();\nconst clItems = $('Cover letter').all();\nconst cvItems = $('Resume').all();\n\nfor (let i = 0; i < clItems.length; i++) {\n \n // --- 1. CLEANING THE COVER LETTER ---\n let rawLetter = clItems[i].json.text || \"\";\n let cleanLetter = rawLetter\n .split('\\\\n').join('\\n')\n .replace(/[\\[\\]]/g, '');\n\n // --- 2. CLEANING THE CV (FOR OVERLEAF) ---\n let rawResume = cvItems[i].json.text || \"\";\n let formattedResume = rawResume.split('\\\\n').join('\\n');\n\n // --- 3. GENERATING RTF CONTENT (For \"Convert to RTF\" Node) ---\n // RTF requires double backslashes for its own commands and \\par for new lines\n \n \n \n\n results.push({\n json: {\n job_title: csvItems[i].json['title'] || csvItems[i].json['﻿title'], \n job_url: csvItems[i].json.url,\n cover_letter: cleanLetter, \n cv: formattedResume, \n \n }\n });\n}\n\nreturn results;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        2336,
-        512
-      ],
+      "position": [2336, 512],
       "id": "7ffb3a42-2f90-4ac8-8c3a-31814a33321d",
       "name": "Store CV + Cover letter for each job"
     },
@@ -204,15 +174,12 @@
       },
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
-      "position": [
-        2544,
-        512
-      ],
+      "position": [2544, 512],
       "id": "11ae633e-7e22-4263-b75c-b4d3a30b65f9",
       "name": "Create spreadsheet",
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "kxUI4jb7MjEKVV2g",
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
           "name": "Google Sheets account"
         }
       }
@@ -230,7 +197,7 @@
           "value": 1183647715,
           "mode": "list",
           "cachedResultName": "Applications",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1bzEzyvVTsFqPDC518aFY5rfxLbCl-zpy-je0d8MuqT4/edit#gid=1183647715"
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/SPREADSHEET_ID_PLACEHOLDER/edit#gid=1183647715"
         },
         "columns": {
           "mappingMode": "defineBelow",
@@ -290,15 +257,12 @@
       },
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
-      "position": [
-        2752,
-        512
-      ],
+      "position": [2752, 512],
       "id": "327ff253-a341-4042-a24e-91ff3dd9a860",
       "name": "Add data to spreadsheet",
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "kxUI4jb7MjEKVV2g",
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
           "name": "Google Sheets account"
         }
       }
@@ -435,10 +399,10 @@
   },
   "active": false,
   "settings": {},
-  "versionId": "0029a36c-dc75-44c9-86a5-aa1b8a8a3a28",
+  "versionId": "REMOVED_FOR_SECURITY",
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "aa3279cad422230879948c99d658fd94fc47d19257916d7e9d7b4522b9c858e7"
+    "instanceId": "REMOVED_FOR_SECURITY"
   },
   "id": "1",
   "tags": []
